@@ -1,6 +1,7 @@
 package com.kyrie.arknights.manager
 
 import com.kyrie.arknights.model.*
+import java.lang.ref.WeakReference
 
 /**
  * Created by Kyrie
@@ -8,23 +9,40 @@ import com.kyrie.arknights.model.*
  *
  */
 object SearchTagManager {
-    private val searchResultList: MutableList<SearchResult> = ArrayList()
+    private var searchResultList: MutableList<SearchResult> = ArrayList()
+    private var searchListener : WeakReference<SearchListener>? = null
 
-    fun addTag(tag: Tag): MutableList<SearchResult> {
+    fun addTag(tag: Tag) {
+        val newSearchResultList: MutableList<SearchResult> = ArrayList()
         searchResultList.forEach {
+            if(it.operatorList.isNotEmpty()) newSearchResultList.add(it)
             val searchResult = SearchResult.newInstance(it)
             when (tag) {
                 is Affix -> searchResult.query.affix.add(tag.id)
-                is Aptitude -> searchResult.query.aptitude = tag.id
-                is Category -> searchResult.query.category = tag.id
-                is Gender -> searchResult.query.gender = tag.id
-                is Position -> searchResult.query.position = tag.id
+                is Aptitude -> {
+                    //之前已经选择过新手，再选择资深干员则不用再合并搜索
+                    if (searchResult.query.aptitude > 0) return@forEach
+                    searchResult.query.aptitude = tag.id
+                }
+                is Category -> {
+                    if (searchResult.query.category > 0) return@forEach
+                    searchResult.query.category = tag.id
+                }
+                is Gender -> {
+                    if (searchResult.query.gender > 0) return@forEach
+                    searchResult.query.gender = tag.id
+                }
+                is Position -> {
+                    if (searchResult.query.position > 0) return@forEach
+                    searchResult.query.position = tag.id}
+
             }
             DbManager.searchTag(searchResult)?.let { list ->
                 searchResult.operatorList = list
             }
-            searchResultList.add(searchResult)
+            newSearchResultList.add(searchResult)
         }
+        searchResultList = newSearchResultList
         val query = Query()
         when (tag) {
             is Affix -> query.affix.add(tag.id)
@@ -37,12 +55,14 @@ object SearchTagManager {
         DbManager.searchTag(searchResult)?.let { list ->
             searchResult.operatorList = list
         }
-        searchResultList.add(searchResult)
-        return searchResultList
+        if (searchResult.operatorList.isNotEmpty()) {
+            searchResultList.add(searchResult)
+        }
+        searchListener?.get()?.onSearchSuccess(searchResultList)
     }
 
-    fun removeTag(tag: Tag): MutableList<SearchResult> {
-        for (index in searchResultList.size -1 downTo 0){
+    fun removeTag(tag: Tag) {
+        for (index in searchResultList.size - 1 downTo 0) {
             val searchResult = searchResultList[index]
 
             val needDelete = when (tag) {
@@ -57,6 +77,18 @@ object SearchTagManager {
                 searchResultList.removeAt(index)
             }
         }
-        return searchResultList
+        searchListener?.get()?.onSearchSuccess(searchResultList)
+    }
+
+    fun clear() {
+        searchResultList = ArrayList()
+    }
+
+    fun registerListener(searchListener: SearchListener) {
+        this.searchListener = WeakReference(searchListener)
+    }
+
+    interface SearchListener{
+        fun onSearchSuccess(searchResultList: List<SearchResult>)
     }
 }

@@ -5,9 +5,8 @@ import android.database.sqlite.SQLiteDatabase
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import com.kyrie.arknights.data.OperatorInitFactory
-import com.kyrie.arknights.model.Operator
-import com.kyrie.arknights.model.SearchResult
+import com.kyrie.arknights.data.DatabaseInitFactory
+import com.kyrie.arknights.model.*
 import com.litesuits.orm.LiteOrm
 import com.litesuits.orm.db.DataBaseConfig
 import com.litesuits.orm.db.assit.QueryBuilder
@@ -21,12 +20,12 @@ import java.util.ArrayList
  */
 object DbManager{
     private const val TAG = "DbManager"
-
+    private var application: Application? = null
     private var liteOrm: LiteOrm? = null
     private val onUpdateListener = object  : SQLiteHelper.OnUpdateListener{
         override fun onCreate(db: SQLiteDatabase?) {
             Log.i(TAG, "onCreate")
-            Handler(Looper.getMainLooper()).postDelayed({ OperatorInitFactory.initialize() }, 500)
+            application?.let { Handler(Looper.getMainLooper()).postDelayed({ DatabaseInitFactory.initialize(it) }, 500) }
         }
 
         override fun onUpdate(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
@@ -38,10 +37,11 @@ object DbManager{
             db?.execSQL("DROP TABLE IF EXISTS category")
             db?.execSQL("DROP TABLE IF EXISTS gender")
             db?.execSQL("DROP TABLE IF EXISTS position")
-            Handler(Looper.getMainLooper()).postDelayed({ OperatorInitFactory.initialize() }, 500)
+            application?.let { Handler(Looper.getMainLooper()).postDelayed({ DatabaseInitFactory.initialize(it) }, 500) }
         }
     }
     fun init(application: Application) {
+        this.application = application
         val dataBaseConfig = DataBaseConfig(application, "arknights", true, 1, onUpdateListener)
         liteOrm = LiteOrm.newCascadeInstance(dataBaseConfig)
     }
@@ -49,10 +49,10 @@ object DbManager{
     fun searchTag(searchResult: SearchResult): ArrayList<Operator>? {
         val queryBuilder = QueryBuilder(Operator::class.java)
         var hasPre = false
-        searchResult.query.affix.forEach {
+/*        searchResult.query.affix.forEach {
             queryBuilder.whereIn("affix", it)
             hasPre = true
-        }
+        }*/
         if (searchResult.query.aptitude > 0) {
             checkWhereAppend(queryBuilder, hasPre)
             hasPre = true
@@ -81,7 +81,7 @@ object DbManager{
         return liteOrm?.query(queryBuilder)
     }
 
-    fun checkWhereAppend(queryBuilder: QueryBuilder<Operator>, hasPre: Boolean) {
+    private fun checkWhereAppend(queryBuilder: QueryBuilder<Operator>, hasPre: Boolean) {
         if (hasPre) {
             queryBuilder.whereAppendAnd()
         }
@@ -95,7 +95,31 @@ object DbManager{
         liteOrm?.insert(operatorList)
     }
 
+    fun insertTag(tagList: List<Tag>) {
+        liteOrm?.insert(tagList)
+    }
+
     fun queryAll() : ArrayList<Operator>?{
         return liteOrm?.query(Operator::class.java)
+    }
+
+    fun queryAptitude(): ArrayList<Aptitude>? {
+        return liteOrm?.query(Aptitude::class.java)
+    }
+
+    fun queryCategory(): ArrayList<Category>? {
+        return liteOrm?.query(Category::class.java)
+    }
+
+    fun queryGender(): ArrayList<Gender>? {
+        return liteOrm?.query(Gender::class.java)
+    }
+
+    fun queryPosition(): ArrayList<Position>? {
+        return liteOrm?.query(Position::class.java)
+    }
+
+    fun queryAffix(): ArrayList<Affix>? {
+        return liteOrm?.query(Affix::class.java)
     }
 }

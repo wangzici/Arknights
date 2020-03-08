@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">LiteOrm</string>
+    <string name="clear">清空</string>
+    <string name="aptitude">资质</string>
+    <string name="position">位置</string>
+    <string name="category">种类</string>
+    <string name="gender">性别</string>
+    <string name="affix">词缀</string>
 </resources>

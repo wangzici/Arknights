@@ -14,4 +14,12 @@ public class Tag extends Model{
         this.id = id;
         this.name = name;
     }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getName_jp() {
+        return name_jp;
+    }
 }
