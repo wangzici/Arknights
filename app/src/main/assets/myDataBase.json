@@ -1,0 +1,21 @@
+[
+  {
+    "imgSmall": -1,
+    "name": "角峰",
+    "position": "MELEE",
+    "star": 4,
+    "tags": [
+      "DEFENSE"
+    ],
+    "type": "DEFENDER"
+  },{
+  "imgSmall": -1,
+  "name": "角峰",
+  "position": "MELEE",
+  "star": 4,
+  "tags": [
+    "DEFENSE"
+  ],
+  "type": "DEFENDER"
+}
+]
